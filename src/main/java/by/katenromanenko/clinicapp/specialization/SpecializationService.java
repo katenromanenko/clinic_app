@@ -1,18 +1,19 @@
 package by.katenromanenko.clinicapp.specialization;
 
+import by.katenromanenko.clinicapp.specialization.dto.SpecializationDto;
+
 import java.util.List;
 import java.util.UUID;
 
 public interface SpecializationService {
 
-    Specialization create(Specialization specialization);
+    SpecializationDto create(SpecializationDto dto);
 
-    Specialization getById(UUID id);
+    SpecializationDto getById(UUID id);
 
-    List<Specialization> getAll();
+    List<SpecializationDto> getAll();
 
-    Specialization update(UUID id, Specialization specialization);
+    SpecializationDto update(UUID id, SpecializationDto dto);
 
     void delete(UUID id);
-
 }

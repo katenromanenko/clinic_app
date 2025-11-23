@@ -1,16 +1,23 @@
 package by.katenromanenko.clinicapp.user;
 
+import by.katenromanenko.clinicapp.user.dto.AppUserDto;
+
 import java.util.List;
 import java.util.UUID;
 
 public interface AppUserService {
-    AppUser create(AppUser user);
 
-    AppUser getById(UUID id);
+    AppUserDto create(AppUserDto dto);
 
-    List<AppUser> getAll();
+    AppUserDto getById(UUID id);
 
-    AppUser update(UUID id, AppUser user);
+    List<AppUserDto> getAll();
+
+    AppUserDto update(UUID id, AppUserDto dto);
 
     void delete(UUID id);
+
+    AppUserDto activate(UUID id);
+
+    AppUserDto deactivate(UUID id);
 }

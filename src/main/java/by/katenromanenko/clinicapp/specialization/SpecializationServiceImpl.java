@@ -1,36 +1,59 @@
 package by.katenromanenko.clinicapp.specialization;
 
+import by.katenromanenko.clinicapp.specialization.dto.SpecializationDto;
+import by.katenromanenko.clinicapp.specialization.mapper.SpecializationMapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-public class SpecializationServiceImpl  implements SpecializationService{
-
+@Service
+@RequiredArgsConstructor
+public class SpecializationServiceImpl implements SpecializationService {
 
     private final SpecializationRepository specializationRepository;
+    private final SpecializationMapper specializationMapper;
 
-    public SpecializationServiceImpl(SpecializationRepository specializationRepository) {
-        this.specializationRepository = specializationRepository;
+    @Override
+    public SpecializationDto create(SpecializationDto dto) {
+
+        Specialization entity = specializationMapper.toEntity(dto);
+
+        entity.setSpecId(UUID.randomUUID());
+
+        entity.setCreatedAt(LocalDateTime.now());
+
+        Specialization saved = specializationRepository.save(entity);
+
+        return specializationMapper.toDto(saved);
     }
 
     @Override
-    public Specialization create(Specialization specialization) {
-        return specializationRepository.save(specialization);
+    public SpecializationDto getById(UUID id) {
+        Specialization entity = specializationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Специализация не найдена: " + id));
+        return specializationMapper.toDto(entity);
     }
 
     @Override
-    public Specialization getById(UUID id) {
-        return specializationRepository.findById(id).orElse(null);
+    public List<SpecializationDto> getAll() {
+        List<Specialization> entities = specializationRepository.findAll();
+        return specializationMapper.toDtoList(entities);
     }
 
     @Override
-    public List<Specialization> getAll() {
-        return specializationRepository.findAll();
-    }
+    public SpecializationDto update(UUID id, SpecializationDto dto) {
+        Specialization existing = specializationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Специализация не найдена: " + id));
 
-    @Override
-    public Specialization update(UUID id, Specialization specialization) {
-        specialization.setSpecId(id);
-        return specializationRepository.save(specialization);
+        existing.setName(dto.getName());
+        existing.setDescription(dto.getDescription());
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        Specialization saved = specializationRepository.save(existing);
+        return specializationMapper.toDto(saved);
     }
 
     @Override
@@ -38,4 +61,3 @@ public class SpecializationServiceImpl  implements SpecializationService{
         specializationRepository.deleteById(id);
     }
 }
-
