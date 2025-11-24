@@ -1,17 +1,20 @@
 package by.katenromanenko.clinicapp.appointment;
 
-import java.util.UUID;
+import by.katenromanenko.clinicapp.appointment.dto.AppointmentDto;
+
 import java.util.List;
+import java.util.UUID;
 
 public interface AppointmentService {
 
-    Appointment create(Appointment appointment);
+    AppointmentDto create(AppointmentDto dto);
 
-    Appointment getById(UUID id);
+    AppointmentDto getById(UUID id);
 
-    List<Appointment> getAll();
+    List<AppointmentDto> getAll();
 
-    Appointment update(UUID id, Appointment appointment);
+    AppointmentDto update(UUID id, AppointmentDto dto);
 
     void delete(UUID id);
 }
+

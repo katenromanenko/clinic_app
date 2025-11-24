@@ -1,17 +1,20 @@
 package by.katenromanenko.clinicapp.schedule;
 
+import by.katenromanenko.clinicapp.schedule.dto.TimeslotDto;
+
 import java.util.List;
 import java.util.UUID;
 
 public interface TimeslotService {
 
-    Timeslot create(Timeslot timeslot);
+    TimeslotDto create(TimeslotDto dto);
 
-    Timeslot getById(UUID id);
+    TimeslotDto getById(UUID id);
 
-    List<Timeslot> getAll();
+    List<TimeslotDto> getAll();
 
-    Timeslot update(UUID id, Timeslot timeslot);
+    TimeslotDto update(UUID id, TimeslotDto dto);
 
     void delete(UUID id);
 }
+

@@ -1,17 +1,19 @@
 package by.katenromanenko.clinicapp.diagnosis;
 
+import by.katenromanenko.clinicapp.diagnosis.dto.DiagnosisDto;
+
 import java.util.List;
 import java.util.UUID;
 
 public interface DiagnosisService {
 
-    Diagnosis create(Diagnosis diagnosis);
+    DiagnosisDto create(DiagnosisDto dto);
 
-    Diagnosis getById(UUID id);
+    DiagnosisDto getById(UUID id);
 
-    List<Diagnosis> getAll();
+    List<DiagnosisDto> getAll();
 
-    Diagnosis update(UUID id, Diagnosis diagnosis);
+    DiagnosisDto update(UUID id, DiagnosisDto dto);
 
     void delete(UUID id);
 }
