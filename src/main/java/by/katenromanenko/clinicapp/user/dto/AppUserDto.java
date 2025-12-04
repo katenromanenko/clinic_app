@@ -3,96 +3,89 @@ package by.katenromanenko.clinicapp.user.dto;
 import by.katenromanenko.clinicapp.user.SexType;
 import by.katenromanenko.clinicapp.user.UserRole;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Data
-@Schema(description = "DTO пользователя системы. Содержит личные данные, роль, контактную информацию и состояние учётной записи.")
+@Schema(description = "Пользователь системы (пациент или врач).")
 public class AppUserDto {
 
     @Schema(
-            description = "Уникальный идентификатор пользователя.",
-            example = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            description = "Идентификатор пользователя (UUID).",
+            example = "d290f1ee-6c54-4b01-90e6-d701748f0851",
+            accessMode = Schema.AccessMode.READ_ONLY
     )
     private UUID id;
 
-    @Schema(
-            description = "Логин пользователя для входа в систему.",
-            example = "k.romanenko"
-    )
+    @Schema(description = "Уникальный логин пользователя.", example = "j.doe")
+    @NotBlank(message = "Логин обязателен.")
+    @Size(max = 100, message = "Логин не может быть длиннее 100 символов.")
     private String login;
 
     @Schema(
-            description = "Хэш пароля пользователя. В API обычно не возвращается.",
-            example = "$2a$10$NwqIuC1V2Z6..."
+            description = "Пароль.",
+            example = "Qwerty123!"
     )
+    @NotBlank(message = "Пароль обязателен.")
+    @Size(min = 8, max = 255, message = "Пароль должен быть от 8 до 255 символов.")
     private String passwordHash;
 
-    @Schema(
-            description = "Имя пользователя.",
-            example = "Ekaterina"
-    )
+    @Schema(description = "Имя пользователя.", example = "Иван")
+    @NotBlank(message = "Имя обязательно.")
+    @Size(max = 100, message = "Имя не может быть длиннее 100 символов.")
     private String firstName;
 
-    @Schema(
-            description = "Фамилия пользователя.",
-            example = "Romanenko"
-    )
+    @Schema(description = "Фамилия пользователя.", example = "Иванов")
+    @NotBlank(message = "Фамилия обязательна.")
+    @Size(max = 100, message = "Фамилия не может быть длиннее 100 символов.")
     private String lastName;
 
-    @Schema(
-            description = "Email пользователя.",
-            example = "kate@example.com"
-    )
+    @Schema(description = "Email пользователя.", example = "ivanov@example.com")
+    @NotBlank(message = "Email обязателен.")
+    @Email(message = "Некорректный формат email.")
+    @Size(max = 200, message = "Email не может быть длиннее 200 символов.")
     private String email;
 
-    @Schema(
-            description = "Телефон пользователя.",
-            example = "+375291234567"
-    )
+    @Schema(description = "Номер телефона.", example = "+375291234567")
+    @Size(max = 30, message = "Телефон не может быть длиннее 30 символов.")
     private String phone;
 
-    @Schema(
-            description = "Дата рождения пользователя.",
-            example = "1994-11-29"
-    )
+    @Schema(description = "Дата рождения (для пациента).", example = "1990-05-20")
+    @Past(message = "Дата рождения должна быть в прошлом.")
     private LocalDate birthDate;
 
-    @Schema(
-            description = "Пол пользователя.",
-            example = "FEMALE"
-    )
+    @Schema(description = "Пол пользователя.", example = "FEMALE")
     private SexType sex;
 
-    @Schema(
-            description = "Роль пользователя в системе (админ, врач, пациент).",
-            example = "DOCTOR"
-    )
+    @Schema(description = "Роль пользователя.", example = "DOCTOR")
+    @NotNull(message = "Роль пользователя обязательна.")
     private UserRole role;
 
-    @Schema(
-            description = "ID специализации врача. Заполняется, если роль = DOCTOR.",
-            example = "0c5ae672-6843-4e7b-9eea-fc44d68e7af0"
-    )
+    @Schema(description = "Идентификатор специализации врача.", example = "b59a9e14-6f07-4b83-8ea0-b04df3b9c0e9")
     private UUID specializationId;
 
-    @Schema(
-            description = "Кабинет врача, если пользователь является доктором.",
-            example = "302B"
-    )
+    @Schema(description = "Номер кабинета врача.", example = "312")
+    @Size(max = 50, message = "Кабинет не может быть длиннее 50 символов.")
     private String office;
 
-    @Schema(
-            description = "Рабочие часы пользователя. Формат произвольный.",
-            example = "08:00–17:00"
-    )
+    @Schema(description = "Рабочие часы врача.", example = "Пн–Пт 9:00–18:00")
+    @Size(max = 100, message = "Описание рабочих часов не может быть длиннее 100 символов.")
     private String workHours;
 
-    @Schema(
-            description = "Активен ли пользователь. Неактивный пользователь не может войти.",
-            example = "true"
-    )
+    @Schema(description = "Признак активности пользователя.", example = "true")
     private boolean active;
+
+    @AssertTrue(message = "Для роли DOCTOR нужно указать specializationId.")
+    public boolean isDoctorHasSpecialization() {
+        if (role == null) {
+            return true;
+        }
+        if (role != UserRole.DOCTOR) {
+            return true;
+        }
+        return specializationId != null;
+    }
 }

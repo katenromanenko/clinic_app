@@ -2,14 +2,17 @@ package by.katenromanenko.clinicapp.schedule;
 
 import by.katenromanenko.clinicapp.user.AppUser;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
 @Entity
 @Table(name = "timeslots")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Timeslot {
 
     @Id

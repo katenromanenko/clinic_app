@@ -9,10 +9,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/appointments")
 @RequiredArgsConstructor
+@Validated
 @Tag(
         name = "Appointments",
         description = "CRUD-операции с записями на приём к врачу."
@@ -65,19 +67,14 @@ public class AppointmentController {
             )
     })
     @GetMapping("/{id}")
-    public ResponseEntity<AppointmentDto> getById(
+    public AppointmentDto getById(
             @Parameter(
                     description = "UUID записи на приём",
                     example = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
             )
             @PathVariable UUID id
     ) {
-        try {
-            AppointmentDto dto = appointmentService.getById(id);
-            return ResponseEntity.ok(dto);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return appointmentService.getById(id);
     }
 
     // ------------------------------------------------------------
@@ -95,7 +92,7 @@ public class AppointmentController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Переданы неверные данные",
+                    description = "Переданы неверные данные (ошибка валидации DTO)",
                     content = @Content(schema = @Schema(hidden = true))
             )
     })
@@ -103,7 +100,7 @@ public class AppointmentController {
     @ResponseStatus(HttpStatus.CREATED)
     public AppointmentDto create(
             @Parameter(description = "Данные новой записи на приём")
-            @RequestBody AppointmentDto dto
+            @Valid @RequestBody AppointmentDto dto
     ) {
         return appointmentService.create(dto);
     }
@@ -122,25 +119,25 @@ public class AppointmentController {
                     content = @Content(schema = @Schema(implementation = AppointmentDto.class))
             ),
             @ApiResponse(
+                    responseCode = "400",
+                    description = "Переданы неверные данные (ошибка валидации DTO)",
+                    content = @Content(schema = @Schema(hidden = true))
+            ),
+            @ApiResponse(
                     responseCode = "404",
                     description = "Запись не найдена",
                     content = @Content(schema = @Schema(hidden = true))
             )
     })
     @PutMapping("/{id}")
-    public ResponseEntity<AppointmentDto> update(
+    public AppointmentDto update(
             @Parameter(description = "UUID записи на приём")
             @PathVariable UUID id,
 
             @Parameter(description = "Новые данные записи")
-            @RequestBody AppointmentDto dto
+            @Valid @RequestBody AppointmentDto dto
     ) {
-        try {
-            AppointmentDto updated = appointmentService.update(id, dto);
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return appointmentService.update(id, dto);
     }
 
     // ------------------------------------------------------------
@@ -148,7 +145,7 @@ public class AppointmentController {
     // ------------------------------------------------------------
     @Operation(
             summary = "Удалить запись",
-            description = "Удаляет запись по UUID. Если записи нет — всё равно 204 (по REST-конвенции)."
+            description = "Удаляет запись по UUID. Если записи нет — либо тихо, либо ошибка от сервиса, которую обработает @ControllerAdvice."
     )
     @ApiResponses({
             @ApiResponse(

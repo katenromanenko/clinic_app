@@ -2,14 +2,17 @@ package by.katenromanenko.clinicapp.diagnosis;
 
 import by.katenromanenko.clinicapp.appointment.Appointment;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
 @Entity
 @Table(name = "diagnosis_attachments")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class DiagnosisAttachment {
 
     @Id
