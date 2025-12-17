@@ -1,0 +1,26 @@
+
+server:
+  port: 9080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/clinic_app
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+management:
+  server:
+    port: 8180
+  endpoints:
+    web:
+      exposure:
+        include: "*"
