@@ -2,59 +2,54 @@ package by.katenromanenko.clinicapp.schedule.dto;
 
 import by.katenromanenko.clinicapp.schedule.TimeslotState;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
-@Schema(description = "Модель данных временного слота врача")
+@Schema(description = "Временной слот приёма врача.")
 public class TimeslotDto {
 
     @Schema(
-            description = "Уникальный идентификатор таймслота",
-            example = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            description = "Идентификатор слота (UUID).",
+            example = "1a0a2e9b-b276-4b4a-b7a3-084f986a4f8c",
+            accessMode = Schema.AccessMode.READ_ONLY
     )
     private UUID id;
 
-    @Schema(
-            description = "Идентификатор врача, которому принадлежит таймслот",
-            example = "b2e1cbd4-d3fc-4e48-8e18-9fda86c4f23d"
-    )
+    @Schema(description = "Идентификатор врача (UUID).", example = "b59a9e14-6f07-4b83-8ea0-b04df3b9c0e9")
+    @NotNull(message = "doctorId обязателен.")
     private UUID doctorId;
 
-    @Schema(
-            description = "Дата и время начала таймслота",
-            example = "2025-12-03T10:00:00"
-    )
+    @Schema(description = "Время начала слота.", example = "2025-12-10T10:00:00")
+    @NotNull(message = "Время начала слота обязательно.")
     private LocalDateTime startTime;
 
-    @Schema(
-            description = "Дата и время окончания таймслота",
-            example = "2025-12-03T10:30:00"
-    )
+    @Schema(description = "Время окончания слота.", example = "2025-12-10T10:30:00")
+    @NotNull(message = "Время окончания слота обязательно.")
     private LocalDateTime endTime;
 
-    @Schema(
-            description = "Текущий статус таймслота (AVAILABLE, BOOKED, CANCELED и т.д.)"
-    )
+    @Schema(description = "Состояние слота.", example = "FREE")
+    @NotNull(message = "Состояние слота обязательно.")
     private TimeslotState state;
 
-    @Schema(
-            description = "Заблокирован ли слот системой или администратором",
-            example = "false"
-    )
+    @Schema(description = "Заблокирован ли слот вручную.", example = "false")
     private boolean blocked;
 
-    @Schema(
-            description = "Время создания таймслота",
-            example = "2025-12-01T09:12:45"
-    )
+    @Schema(description = "Дата создания записи.", accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime createdAt;
 
-    @Schema(
-            description = "Время последнего обновления таймслота",
-            example = "2025-12-01T10:45:30"
-    )
+    @Schema(description = "Дата последнего обновления записи.", accessMode = Schema.AccessMode.READ_ONLY)
     private LocalDateTime updatedAt;
+
+    @AssertTrue(message = "Время окончания слота должно быть позже времени начала.")
+    public boolean isEndAfterStart() {
+        if (startTime == null || endTime == null) {
+            return true;
+        }
+        return endTime.isAfter(startTime);
+    }
 }

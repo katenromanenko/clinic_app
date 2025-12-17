@@ -3,14 +3,17 @@ package by.katenromanenko.clinicapp.appointment;
 import by.katenromanenko.clinicapp.schedule.Timeslot;
 import by.katenromanenko.clinicapp.user.AppUser;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
 @Entity
 @Table(name = "appointments")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Appointment {
 
     @Id

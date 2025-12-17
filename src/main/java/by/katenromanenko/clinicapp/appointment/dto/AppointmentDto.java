@@ -2,92 +2,119 @@ package by.katenromanenko.clinicapp.appointment.dto;
 
 import by.katenromanenko.clinicapp.appointment.AppointmentStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
-@Schema(
-        description = "DTO для записи на приём. Содержит полную информацию о назначении визита, его статусе и временных метках."
-)
+@Schema(description = "Запись пациента на приём.")
 public class AppointmentDto {
 
     @Schema(
-            description = "Идентификатор записи на приём.",
-            example = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            description = "Идентификатор записи (UUID).",
+            example = "2f4cc2a4-8cbd-4a51-9c2d-3cf1fcd51f17",
+            accessMode = Schema.AccessMode.READ_ONLY
     )
     private UUID id;
 
     @Schema(
-            description = "ID пациента, который записан на приём.",
-            example = "d1fcdd28-35c0-4e8b-843b-bf28f4d534e3"
+            description = "Идентификатор пациента (UUID).",
+            example = "7e321423-5a4c-4bd5-9a46-4f8d88d2c3e6"
     )
+    @NotNull(message = "patientId обязателен.")
     private UUID patientId;
 
     @Schema(
-            description = "ID врача, к которому осуществляется запись.",
-            example = "b4c44a25-9024-4b0f-a516-6c6196b12fd2"
+            description = "Идентификатор врача (UUID).",
+            example = "b59a9e14-6f07-4b83-8ea0-b04df3b9c0e9"
     )
+    @NotNull(message = "doctorId обязателен.")
     private UUID doctorId;
 
     @Schema(
-            description = "ID таймслота, выбранного для приёма.",
-            example = "7e6b6a76-5826-4529-afae-b2b46bb9ea93"
+            description = "Идентификатор слота (UUID). Может быть null, если запись создана без привязки к слоту.",
+            example = "1a0a2e9b-b276-4b4a-b7a3-084f986a4f8c"
     )
     private UUID slotId;
 
     @Schema(
             description = "Дата и время начала приёма.",
-            example = "2025-12-12T14:30:00"
+            example = "2025-12-15T15:00:00"
     )
+    @NotNull(message = "Дата и время начала приёма обязательны.")
+    @FutureOrPresent(message = "Дата и время начала приёма не могут быть в прошлом.")
     private LocalDateTime startAt;
 
     @Schema(
             description = "Длительность приёма в минутах.",
             example = "30"
     )
+    @NotNull(message = "Длительность приёма обязательна.")
+    @Positive(message = "Длительность приёма должна быть больше 0.")
     private Integer durationMin;
 
     @Schema(
             description = "Текущий статус записи.",
             example = "SCHEDULED"
     )
+    @NotNull(message = "Статус записи обязателен.")
     private AppointmentStatus status;
 
     @Schema(
-            description = "Описание или комментарий пациента/врача.",
-            example = "Первичный приём. Жалобы на боль в горле."
+            description = "Описание / жалобы пациента.",
+            example = "Острые боли в спине в течение 3 дней."
     )
+    @Size(max = 2000, message = "Описание не может быть длиннее 2000 символов.")
     private String description;
 
     @Schema(
-            description = "Причина отмены записи, если она была отменена.",
-            example = "Пациент заболел"
+            description = "Причина отмены приёма.",
+            example = "Пациент не пришёл."
     )
+    @Size(max = 250, message = "Причина отмены не может быть длиннее 250 символов.")
     private String cancellationReason;
 
     @Schema(
-            description = "Отправлено ли уведомление пациенту.",
-            example = "true"
+            description = "Было ли отправлено уведомление пациенту.",
+            example = "true",
+            accessMode = Schema.AccessMode.READ_ONLY
     )
     private boolean notificationSent;
 
     @Schema(
-            description = "Дата и время создания записи.",
-            example = "2025-12-10T10:15:00"
+            description = "Дата создания записи.",
+            accessMode = Schema.AccessMode.READ_ONLY
     )
     private LocalDateTime createdAt;
 
     @Schema(
-            description = "Дата и время последнего обновления записи.",
-            example = "2025-12-11T11:20:00"
+            description = "Дата последнего обновления записи.",
+            accessMode = Schema.AccessMode.READ_ONLY
     )
     private LocalDateTime updatedAt;
 
     @Schema(
-            description = "Дата и время отмены записи, если запись была отменена.",
-            example = "2025-12-11T09:00:00"
+            description = "Дата отмены приёма.",
+            accessMode = Schema.AccessMode.READ_ONLY
     )
     private LocalDateTime canceledAt;
+
+    @AssertTrue(message = "Для отменённого приёма нужно указать причину отмены.")
+    public boolean isCancellationReasonValid() {
+        if (status == null) {
+            return true;
+        }
+
+        if (status != AppointmentStatus.CANCELED) {
+            return true;
+        }
+
+        return cancellationReason != null && !cancellationReason.isBlank();
+    }
 }

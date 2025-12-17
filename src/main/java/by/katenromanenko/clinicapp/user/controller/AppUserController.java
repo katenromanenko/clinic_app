@@ -2,6 +2,7 @@ package by.katenromanenko.clinicapp.user.controller;
 
 import by.katenromanenko.clinicapp.user.AppUserService;
 import by.katenromanenko.clinicapp.user.dto.AppUserDto;
+import by.katenromanenko.clinicapp.common.error.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -9,9 +10,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +22,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
+@Validated
 @Tag(
         name = "Users",
         description = "CRUD-операции над пользователями системы: создание, обновление, просмотр, активация и деактивация."
@@ -37,7 +40,7 @@ public class AppUserController {
     )
     @ApiResponse(
             responseCode = "200",
-            description = "Список найден"
+            description = "Список пользователей получен"
     )
     @GetMapping
     public List<AppUserDto> getAll() {
@@ -53,19 +56,20 @@ public class AppUserController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Пользователь найден"),
-            @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Пользователь не найден",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     @GetMapping("/{id}")
-    public ResponseEntity<AppUserDto> getById(
+    public AppUserDto getById(
             @Parameter(description = "UUID пользователя", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
             @PathVariable UUID id
     ) {
-        try {
-            AppUserDto dto = appUserService.getById(id);
-            return ResponseEntity.ok(dto);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        // Если пользователь не найден, сервис кидает IllegalArgumentException,
+        // которую перехватывает глобальный обработчик и возвращает 404.
+        return appUserService.getById(id);
     }
 
     // ------------------------------------------------------------
@@ -80,14 +84,14 @@ public class AppUserController {
             @ApiResponse(
                     responseCode = "400",
                     description = "Некорректные данные",
-                    content = @Content(schema = @Schema(hidden = true))
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
             )
     })
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public AppUserDto create(
             @Parameter(description = "Данные нового пользователя")
-            @RequestBody AppUserDto dto
+            @Valid @RequestBody AppUserDto dto
     ) {
         return appUserService.create(dto);
     }
@@ -101,22 +105,26 @@ public class AppUserController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Пользователь обновлён"),
-            @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Некорректные данные",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Пользователь не найден",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     @PutMapping("/{id}")
-    public ResponseEntity<AppUserDto> update(
+    public AppUserDto update(
             @Parameter(description = "UUID пользователя, которого нужно обновить")
             @PathVariable UUID id,
 
             @Parameter(description = "Новые данные пользователя")
-            @RequestBody AppUserDto dto
+            @Valid @RequestBody AppUserDto dto
     ) {
-        try {
-            AppUserDto updated = appUserService.update(id, dto);
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return appUserService.update(id, dto);
     }
 
     // ------------------------------------------------------------
@@ -128,7 +136,11 @@ public class AppUserController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Пользователь удалён"),
-            @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Пользователь не найден",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -148,19 +160,18 @@ public class AppUserController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Пользователь активирован"),
-            @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Пользователь не найден",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     @PatchMapping("/{id}/activate")
-    public ResponseEntity<AppUserDto> activate(
+    public AppUserDto activate(
             @Parameter(description = "UUID пользователя")
             @PathVariable UUID id
     ) {
-        try {
-            AppUserDto dto = appUserService.activate(id);
-            return ResponseEntity.ok(dto);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return appUserService.activate(id);
     }
 
     // ------------------------------------------------------------
@@ -172,18 +183,17 @@ public class AppUserController {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Пользователь деактивирован"),
-            @ApiResponse(responseCode = "404", description = "Пользователь не найден")
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Пользователь не найден",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+            )
     })
     @PatchMapping("/{id}/deactivate")
-    public ResponseEntity<AppUserDto> deactivate(
+    public AppUserDto deactivate(
             @Parameter(description = "UUID пользователя")
             @PathVariable UUID id
     ) {
-        try {
-            AppUserDto dto = appUserService.deactivate(id);
-            return ResponseEntity.ok(dto);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        return appUserService.deactivate(id);
     }
 }

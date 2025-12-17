@@ -3,14 +3,19 @@ package by.katenromanenko.clinicapp.user;
 import by.katenromanenko.clinicapp.specialization.Specialization;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@Data
 @Entity
 @Table(name = "users")
+@Getter
+@Setter
+@NoArgsConstructor
 public class AppUser {
 
     @Id

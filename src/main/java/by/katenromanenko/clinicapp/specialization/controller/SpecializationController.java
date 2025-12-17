@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +51,7 @@ public class SpecializationController {
     // ------------------------------------------------------------
     @Operation(
             summary = "Получить специализацию по ID",
-            description = "Возвращает одну специализацию по её UUID. Если не найдена — 404."
+            description = "Возвращает одну специализацию по её UUID."
     )
     @ApiResponses({
             @ApiResponse(
@@ -66,15 +67,14 @@ public class SpecializationController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<SpecializationDto> getById(
-            @Parameter(description = "UUID специализации", example = "3fa85f64-5717-4562-b3fc-2c963f66afa6")
+            @Parameter(
+                    description = "UUID специализации",
+                    example = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+            )
             @PathVariable UUID id
     ) {
-        try {
-            SpecializationDto dto = specializationService.getById(id);
-            return ResponseEntity.ok(dto);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        SpecializationDto dto = specializationService.getById(id);
+        return ResponseEntity.ok(dto);
     }
 
     // ------------------------------------------------------------
@@ -100,7 +100,7 @@ public class SpecializationController {
     @ResponseStatus(HttpStatus.CREATED)
     public SpecializationDto create(
             @Parameter(description = "Данные новой специализации")
-            @RequestBody SpecializationDto dto
+            @Valid @RequestBody SpecializationDto dto
     ) {
         return specializationService.create(dto);
     }
@@ -119,6 +119,11 @@ public class SpecializationController {
                     content = @Content(schema = @Schema(implementation = SpecializationDto.class))
             ),
             @ApiResponse(
+                    responseCode = "400",
+                    description = "Неверные данные",
+                    content = @Content(schema = @Schema(hidden = true))
+            ),
+            @ApiResponse(
                     responseCode = "404",
                     description = "Специализация не найдена",
                     content = @Content(schema = @Schema(hidden = true))
@@ -129,15 +134,11 @@ public class SpecializationController {
             @Parameter(description = "UUID специализации для обновления")
             @PathVariable UUID id,
 
-            @Parameter(description = "Новые данные")
-            @RequestBody SpecializationDto dto
+            @Parameter(description = "Новые данные специализации")
+            @Valid @RequestBody SpecializationDto dto
     ) {
-        try {
-            SpecializationDto updated = specializationService.update(id, dto);
-            return ResponseEntity.ok(updated);
-        } catch (IllegalArgumentException ex) {
-            return ResponseEntity.notFound().build();
-        }
+        SpecializationDto updated = specializationService.update(id, dto);
+        return ResponseEntity.ok(updated);
     }
 
     // ------------------------------------------------------------
@@ -145,7 +146,7 @@ public class SpecializationController {
     // ------------------------------------------------------------
     @Operation(
             summary = "Удалить специализацию",
-            description = "Удаляет специализацию по UUID. Если её нет — всё равно 204."
+            description = "Удаляет специализацию по UUID. Если её нет — возвращается 204."
     )
     @ApiResponse(
             responseCode = "204",
