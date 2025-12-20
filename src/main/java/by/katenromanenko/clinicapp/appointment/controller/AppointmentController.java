@@ -1,7 +1,9 @@
 package by.katenromanenko.clinicapp.appointment.controller;
 
 import by.katenromanenko.clinicapp.appointment.AppointmentService;
+import by.katenromanenko.clinicapp.appointment.dto.AppointmentCreateRequest;
 import by.katenromanenko.clinicapp.appointment.dto.AppointmentDto;
+import by.katenromanenko.clinicapp.appointment.dto.AppointmentUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -100,9 +102,9 @@ public class AppointmentController {
     @ResponseStatus(HttpStatus.CREATED)
     public AppointmentDto create(
             @Parameter(description = "Данные новой записи на приём")
-            @Valid @RequestBody AppointmentDto dto
+            @Valid @RequestBody AppointmentCreateRequest request
     ) {
-        return appointmentService.create(dto);
+        return appointmentService.create(request);
     }
 
     // ------------------------------------------------------------
@@ -135,9 +137,9 @@ public class AppointmentController {
             @PathVariable UUID id,
 
             @Parameter(description = "Новые данные записи")
-            @Valid @RequestBody AppointmentDto dto
+            @Valid @RequestBody AppointmentUpdateRequest request
     ) {
-        return appointmentService.update(id, dto);
+        return appointmentService.update(id, request);
     }
 
     // ------------------------------------------------------------

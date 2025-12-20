@@ -39,7 +39,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        // 1. специализации
+        /*// 1. специализации
         SpecializationDto spec1 = new SpecializationDto();
         spec1.setName("Терапевт");
         spec1.setDescription("Терапия");
@@ -126,6 +126,6 @@ public class DataInitializer implements CommandLineRunner {
         app2.setStartAt(slot2.getStartTime());
         app2.setDurationMin(30);
         app2.setStatus(AppointmentStatus.SCHEDULED);
-        appointmentService.create(app2);
+        appointmentService.create(app2);*/
     }
 }

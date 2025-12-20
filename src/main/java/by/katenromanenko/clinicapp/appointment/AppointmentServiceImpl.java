@@ -1,6 +1,8 @@
 package by.katenromanenko.clinicapp.appointment;
 
+import by.katenromanenko.clinicapp.appointment.dto.AppointmentCreateRequest;
 import by.katenromanenko.clinicapp.appointment.dto.AppointmentDto;
+import by.katenromanenko.clinicapp.appointment.dto.AppointmentUpdateRequest;
 import by.katenromanenko.clinicapp.appointment.mapper.AppointmentMapper;
 import by.katenromanenko.clinicapp.schedule.Timeslot;
 import by.katenromanenko.clinicapp.schedule.TimeslotRepository;
@@ -26,7 +28,13 @@ public class AppointmentServiceImpl implements AppointmentService {
     public AppointmentDto create(AppointmentDto dto) {
         Appointment entity = appointmentMapper.toEntity(dto);
 
-        entity.setAppointmentId(UUID.randomUUID());
+        if (entity.getStatus() == null) {
+            entity.setStatus(AppointmentStatus.SCHEDULED);
+        }
+
+        if (entity.getAppointmentId() == null) {
+            entity.setAppointmentId(UUID.randomUUID());
+        }
 
         AppUser patient = appUserRepository.findById(dto.getPatientId())
                 .orElseThrow(() -> new IllegalArgumentException("Пациент не найден: " + dto.getPatientId()));
@@ -53,6 +61,11 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    public AppointmentDto create(AppointmentCreateRequest request) {
+        return null;
+    }
+
+    @Override
     public AppointmentDto getById(UUID id) {
         Appointment entity = appointmentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Приём не найден: " + id));
@@ -63,6 +76,11 @@ public class AppointmentServiceImpl implements AppointmentService {
     public List<AppointmentDto> getAll() {
         List<Appointment> entities = appointmentRepository.findAll();
         return appointmentMapper.toDtoList(entities);
+    }
+
+    @Override
+    public AppointmentDto update(UUID id, AppointmentUpdateRequest request) {
+        return null;
     }
 
     @Override
@@ -108,7 +126,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         entity.setUpdatedAt(LocalDateTime.now());
 
-        if (entity.getStatus() == AppointmentStatus.CANCELED) {
+        if (entity.getStatus() == AppointmentStatus.CANCELED && entity.getCanceledAt() == null) {
             entity.setCanceledAt(LocalDateTime.now());
         }
 
