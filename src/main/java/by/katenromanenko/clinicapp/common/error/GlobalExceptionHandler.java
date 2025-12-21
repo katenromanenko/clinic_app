@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Slf4j
 @RestControllerAdvice
@@ -67,10 +68,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
 
-        String message = ex.getMessage();
-        if (message == null || message.isBlank()) {
-            message = "Ресурс не найден";
-        }
+        String message = (ex.getMessage() == null || ex.getMessage().isBlank())
+                ? "Некорректный запрос"
+                : ex.getMessage();
+
+        ErrorResponse body = new ErrorResponse(
+                "BAD_REQUEST",
+                message,
+                Collections.emptyList()
+        );
+
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ErrorResponse> handleNoSuchElement(NoSuchElementException ex) {
+
+        String message = (ex.getMessage() == null || ex.getMessage().isBlank())
+                ? "Ресурс не найден"
+                : ex.getMessage();
 
         ErrorResponse body = new ErrorResponse(
                 "NOT_FOUND",
