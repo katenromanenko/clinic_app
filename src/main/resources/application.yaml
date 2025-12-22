@@ -9,14 +9,6 @@ spring:
     password: postgres
     driver-class-name: org.postgresql.Driver
 
-  #jpa:
-    #hibernate:
-   #   ddl-auto: create
-   # show-sql: true
-  #  properties:
- #     hibernate:
-  #      format_sql: true
-
   liquibase:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
@@ -28,3 +20,8 @@ management:
     web:
       exposure:
         include: "*"
+
+jwt:
+  secret-key: "SEVMTE8gV09STEQgR1ZUIHRva2VuIGFuZCBuZXcgcHJvdG9jb2w="
+  access-token:
+    lifetime-minutes: 5

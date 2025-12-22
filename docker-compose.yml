@@ -12,13 +12,15 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/clinic_app
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_DATASOURCE_DRIVER-CLASS-NAME=org.postgresql.Driver
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
       - SPRING_LIQUIBASE_ENABLED=true
-      - SPRING_LIQUIBASE_CHANGE-LOG=classpath:db/changelog/db.changelog-master.yaml
+      - SPRING_LIQUIBASE_CHANGE_LOG=classpath:db/changelog/db.changelog-master.yaml
+    ports:
+      - "9080:9080"
+      - "8180:8180"
     networks:
       - clinic-net
 
-  # PostgreSQL
   postgres:
     image: postgres:15
     container_name: postgres-clinic_app
@@ -37,6 +39,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
 networks:
   clinic-net:
     driver: bridge
