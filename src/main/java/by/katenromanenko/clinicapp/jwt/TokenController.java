@@ -1,7 +1,8 @@
 package by.katenromanenko.clinicapp.jwt;
 
 import by.katenromanenko.clinicapp.common.error.ErrorResponse;
-import by.katenromanenko.clinicapp.jwt.dto.*;
+import by.katenromanenko.clinicapp.jwt.dto.JwtResponse;
+import by.katenromanenko.clinicapp.jwt.dto.RefreshRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -19,20 +20,20 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(
         name = "Authentication",
-        description = "Аутентификация пользователей и получение JWT токенов"
+        description = "Аутентификация пользователей и обновление JWT-токенов"
 )
-public class JwtController {
+public class TokenController {
 
-    private final SignService signService;
+    private final RefreshTokenService refreshTokenService;
 
     @Operation(
-            summary = "Вход пользователя",
-            description = "Проверяет логин и пароль и возвращает accessToken и refreshToken."
+            summary = "Обновить access token",
+            description = "Принимает refreshToken и возвращает новую пару токенов. Refresh token ротируется (старый становится недействителен)."
     )
     @ApiResponses({
             @ApiResponse(
                     responseCode = "200",
-                    description = "Успешный вход. Возвращены токены.",
+                    description = "Токены успешно обновлены.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = JwtResponse.class),
@@ -40,8 +41,8 @@ public class JwtController {
                                     name = "Success",
                                     value = """
                                             {
-                                              "accessToken": "eyJhbGciOiJIUzI1NiJ9...access...",
-                                              "refreshToken": "550e8400-e29b-41d4-a716-446655440000"
+                                              "accessToken": "eyJhbGciOiJIUzI1NiJ9...newAccess...",
+                                              "refreshToken": "2f1c4c2a-8cbd-4a51-9c2d-3cf1fcd51f17"
                                             }
                                             """
                             )
@@ -49,7 +50,7 @@ public class JwtController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Ошибка валидации запроса (пустой login/password).",
+                    description = "Пустой refreshToken или неверный формат запроса.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -59,7 +60,7 @@ public class JwtController {
                                             {
                                               "code": "VALIDATION_ERROR",
                                               "message": "Некорректные данные запроса",
-                                              "details": ["login не должен быть пустым", "password не должен быть пустым"]
+                                              "details": ["refreshToken не должен быть пустым"]
                                             }
                                             """
                             )
@@ -67,16 +68,16 @@ public class JwtController {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Неверный логин или пароль.",
+                    description = "Refresh token невалиден или истёк.",
                     content = @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(
-                                    name = "Bad credentials",
+                                    name = "Invalid refresh token",
                                     value = """
                                             {
                                               "code": "UNAUTHORIZED",
-                                              "message": "Неверный логин или пароль",
+                                              "message": "Refresh token не валиден или истек",
                                               "details": []
                                             }
                                             """
@@ -84,8 +85,9 @@ public class JwtController {
                     )
             )
     })
-    @PostMapping("/sign-in")
-    public JwtResponse signIn(@Valid @RequestBody SignInRequest request) {
-        return signService.signIn(request);
+    @PostMapping("/refresh")
+    public JwtResponse refresh(@Valid @RequestBody RefreshRequest request) {
+        return refreshTokenService.refresh(request.getRefreshToken());
     }
 }
+

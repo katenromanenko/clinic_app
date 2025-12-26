@@ -14,6 +14,8 @@ public interface SpecializationMapper {
     SpecializationDto toDto(Specialization entity);
 
     @Mapping(source = "id", target = "specId")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     Specialization toEntity(SpecializationDto dto);
 
     List<SpecializationDto> toDtoList(List<Specialization> entities);
