@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   clinic_app:
     build: .
@@ -15,6 +13,9 @@ services:
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
       - SPRING_LIQUIBASE_ENABLED=true
       - SPRING_LIQUIBASE_CHANGE_LOG=classpath:db/changelog/db.changelog-master.yaml
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     ports:
       - "9080:9080"
       - "8180:8180"
@@ -40,9 +41,26 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: clinic_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - clinic-net
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 networks:
   clinic-net:
     driver: bridge
 
 volumes:
   postgres-data:
+  redis-data:

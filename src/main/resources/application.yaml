@@ -13,6 +13,17 @@ spring:
     enabled: true
     change-log: classpath:db/changelog/db.changelog-master.yaml
 
+  data:
+    redis:
+      host: redis
+      port: 6379
+      timeout: 60000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
 management:
   server:
     port: 8180
@@ -22,6 +33,8 @@ management:
         include: "*"
 
 jwt:
-  secret-key: "SEVMTE8gV09STEQgR1ZUIHRva2VuIGFuZCBuZXcgcHJvdG9jb2w="
+  secret-key: ${JWT_SECRET_KEY}
   access-token:
-    lifetime-minutes: 5
+    lifetime-minutes: 15
+  refresh-token:
+        lifetime: 7d
