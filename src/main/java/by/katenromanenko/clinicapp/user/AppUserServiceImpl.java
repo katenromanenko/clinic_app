@@ -1,10 +1,12 @@
 package by.katenromanenko.clinicapp.user;
 
+import by.katenromanenko.clinicapp.common.error.NotFoundException;
 import by.katenromanenko.clinicapp.specialization.Specialization;
 import by.katenromanenko.clinicapp.specialization.SpecializationRepository;
 import by.katenromanenko.clinicapp.user.dto.AppUserDto;
 import by.katenromanenko.clinicapp.user.mapper.AppUserMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,6 +20,7 @@ public class AppUserServiceImpl implements AppUserService {
     private final AppUserRepository appUserRepository;
     private final AppUserMapper appUserMapper;
     private final SpecializationRepository specializationRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public AppUserDto create(AppUserDto dto) {
@@ -28,16 +31,25 @@ public class AppUserServiceImpl implements AppUserService {
             entity.setUserId(UUID.randomUUID());
         }
 
+        String rawOrHash = entity.getPasswordHash();
+
+        if (rawOrHash == null || rawOrHash.isBlank()) {
+            throw new IllegalArgumentException("passwordHash обязателен");
+        }
+
+        if (!isBcryptHash(rawOrHash)) {
+            entity.setPasswordHash(passwordEncoder.encode(rawOrHash));
+        }
+
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(null);
         entity.setActive(true);
 
         if (dto.getSpecializationId() != null) {
             Specialization specialization = specializationRepository.findById(dto.getSpecializationId())
-                    .orElseThrow(() -> new IllegalArgumentException(
+                    .orElseThrow(() -> new NotFoundException(
                             "Специализация не найдена: " + dto.getSpecializationId()
                     ));
-
             entity.setSpecialization(specialization);
         } else {
             entity.setSpecialization(null);
@@ -50,7 +62,7 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public AppUserDto getById(UUID id) {
         AppUser entity = appUserRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден: " + id));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + id));
 
         return appUserMapper.toDto(entity);
     }
@@ -65,7 +77,7 @@ public class AppUserServiceImpl implements AppUserService {
     public AppUserDto update(UUID id, AppUserDto dto) {
 
         AppUser existing = appUserRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден: " + id));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + id));
 
         AppUser entity = appUserMapper.toEntity(dto);
 
@@ -75,16 +87,24 @@ public class AppUserServiceImpl implements AppUserService {
 
         entity.setActive(existing.isActive());
 
-        if (entity.getPasswordHash() == null) {
+        // 3) пароль:
+        //    - если не прислали — оставляем старый
+        //    - если прислали — проверим и (если надо) захэшируем
+        String newRawOrHash = entity.getPasswordHash();
+
+        if (newRawOrHash == null || newRawOrHash.isBlank()) {
             entity.setPasswordHash(existing.getPasswordHash());
+        } else {
+            if (!isBcryptHash(newRawOrHash)) {
+                entity.setPasswordHash(passwordEncoder.encode(newRawOrHash));
+            }
         }
 
         if (dto.getSpecializationId() != null) {
             Specialization specialization = specializationRepository.findById(dto.getSpecializationId())
-                    .orElseThrow(() -> new IllegalArgumentException(
+                    .orElseThrow(() -> new NotFoundException(
                             "Специализация не найдена: " + dto.getSpecializationId()
                     ));
-
             entity.setSpecialization(specialization);
         } else {
             entity.setSpecialization(existing.getSpecialization());
@@ -96,13 +116,19 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public void delete(UUID id) {
+
+        boolean exists = appUserRepository.existsById(id);
+        if (!exists) {
+            throw new NotFoundException("Пользователь не найден: " + id);
+        }
+
         appUserRepository.deleteById(id);
     }
 
     @Override
     public AppUserDto activate(UUID id) {
         AppUser entity = appUserRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден: " + id));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + id));
 
         entity.setActive(true);
         entity.setUpdatedAt(LocalDateTime.now());
@@ -113,11 +139,15 @@ public class AppUserServiceImpl implements AppUserService {
     @Override
     public AppUserDto deactivate(UUID id) {
         AppUser entity = appUserRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден: " + id));
+                .orElseThrow(() -> new NotFoundException("Пользователь не найден: " + id));
 
         entity.setActive(false);
         entity.setUpdatedAt(LocalDateTime.now());
 
         return appUserMapper.toDto(appUserRepository.save(entity));
+    }
+
+    private boolean isBcryptHash(String value) {
+        return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
     }
 }

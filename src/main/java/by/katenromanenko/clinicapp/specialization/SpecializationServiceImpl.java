@@ -1,5 +1,6 @@
 package by.katenromanenko.clinicapp.specialization;
 
+import by.katenromanenko.clinicapp.common.error.NotFoundException;
 import by.katenromanenko.clinicapp.specialization.dto.SpecializationDto;
 import by.katenromanenko.clinicapp.specialization.mapper.SpecializationMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,18 +23,17 @@ public class SpecializationServiceImpl implements SpecializationService {
         Specialization entity = specializationMapper.toEntity(dto);
 
         entity.setSpecId(UUID.randomUUID());
-
         entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(null);
 
         Specialization saved = specializationRepository.save(entity);
-
         return specializationMapper.toDto(saved);
     }
 
     @Override
     public SpecializationDto getById(UUID id) {
         Specialization entity = specializationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Специализация не найдена: " + id));
+                .orElseThrow(() -> new NotFoundException("Специализация не найдена: " + id));
         return specializationMapper.toDto(entity);
     }
 
@@ -46,7 +46,7 @@ public class SpecializationServiceImpl implements SpecializationService {
     @Override
     public SpecializationDto update(UUID id, SpecializationDto dto) {
         Specialization existing = specializationRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Специализация не найдена: " + id));
+                .orElseThrow(() -> new NotFoundException("Специализация не найдена: " + id));
 
         existing.setName(dto.getName());
         existing.setDescription(dto.getDescription());
@@ -58,6 +58,12 @@ public class SpecializationServiceImpl implements SpecializationService {
 
     @Override
     public void delete(UUID id) {
+
+        boolean exists = specializationRepository.existsById(id);
+        if (!exists) {
+            throw new NotFoundException("Специализация не найдена: " + id);
+        }
+
         specializationRepository.deleteById(id);
     }
 }

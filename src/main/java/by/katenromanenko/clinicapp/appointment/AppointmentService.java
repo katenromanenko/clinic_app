@@ -9,8 +9,6 @@ import java.util.UUID;
 
 public interface AppointmentService {
 
-    AppointmentDto create(AppointmentDto dto);
-
     AppointmentDto create(AppointmentCreateRequest request);
 
     AppointmentDto getById(UUID id);
@@ -19,8 +17,5 @@ public interface AppointmentService {
 
     AppointmentDto update(UUID id, AppointmentUpdateRequest request);
 
-    AppointmentDto update(UUID id, AppointmentDto dto);
-
     void delete(UUID id);
 }
-
