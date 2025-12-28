@@ -1,5 +1,6 @@
 package by.katenromanenko.clinicapp.schedule;
 
+import by.katenromanenko.clinicapp.common.error.NotFoundException;
 import by.katenromanenko.clinicapp.schedule.dto.TimeslotDto;
 import by.katenromanenko.clinicapp.schedule.mapper.TimeslotMapper;
 import by.katenromanenko.clinicapp.user.AppUser;
@@ -29,7 +30,7 @@ public class TimeslotServiceImpl implements TimeslotService {
 
 
         AppUser doctor = appUserRepository.findById(dto.getDoctorId())
-                .orElseThrow(() -> new IllegalArgumentException("Доктор не найден: " + dto.getDoctorId()));
+                .orElseThrow(() -> new NotFoundException("Доктор не найден: " + dto.getDoctorId()));
         entity.setDoctor(doctor);
 
 
@@ -37,14 +38,13 @@ public class TimeslotServiceImpl implements TimeslotService {
         entity.setUpdatedAt(null);
 
         Timeslot saved = timeslotRepository.save(entity);
-
         return timeslotMapper.toDto(saved);
     }
 
     @Override
     public TimeslotDto getById(UUID id) {
         Timeslot entity = timeslotRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Таймслот не найден: " + id));
+                .orElseThrow(() -> new NotFoundException("Таймслот не найден: " + id));
         return timeslotMapper.toDto(entity);
     }
 
@@ -57,7 +57,7 @@ public class TimeslotServiceImpl implements TimeslotService {
     @Override
     public TimeslotDto update(UUID id, TimeslotDto dto) {
         Timeslot entity = timeslotRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Таймслот не найден: " + id));
+                .orElseThrow(() -> new NotFoundException("Таймслот не найден: " + id));
 
         if (dto.getStartTime() != null) {
             entity.setStartTime(dto.getStartTime());
@@ -73,7 +73,7 @@ public class TimeslotServiceImpl implements TimeslotService {
 
         if (dto.getDoctorId() != null) {
             AppUser doctor = appUserRepository.findById(dto.getDoctorId())
-                    .orElseThrow(() -> new IllegalArgumentException("Доктор не найден: " + dto.getDoctorId()));
+                    .orElseThrow(() -> new NotFoundException("Доктор не найден: " + dto.getDoctorId()));
             entity.setDoctor(doctor);
         }
 
@@ -85,6 +85,12 @@ public class TimeslotServiceImpl implements TimeslotService {
 
     @Override
     public void delete(UUID id) {
+
+        boolean exists = timeslotRepository.existsById(id);
+        if (!exists) {
+            throw new NotFoundException("Таймслот не найден: " + id);
+        }
+
         timeslotRepository.deleteById(id);
     }
 }
