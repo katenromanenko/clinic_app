@@ -4,6 +4,7 @@ import by.katenromanenko.clinicapp.appointment.dto.AppointmentCreateRequest;
 import by.katenromanenko.clinicapp.appointment.dto.AppointmentDto;
 import by.katenromanenko.clinicapp.appointment.dto.AppointmentUpdateRequest;
 import by.katenromanenko.clinicapp.appointment.mapper.AppointmentMapper;
+import by.katenromanenko.clinicapp.common.error.NotFoundException;
 import by.katenromanenko.clinicapp.schedule.Timeslot;
 import by.katenromanenko.clinicapp.schedule.TimeslotRepository;
 import by.katenromanenko.clinicapp.schedule.TimeslotState;
@@ -11,8 +12,7 @@ import by.katenromanenko.clinicapp.user.AppUser;
 import by.katenromanenko.clinicapp.user.AppUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import by.katenromanenko.clinicapp.common.error.NotFoundException;
-
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,50 +22,61 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AppointmentServiceImpl implements AppointmentService {
 
+    private static final int SLOT_DURATION_MIN = 30;
+
     private final AppointmentRepository appointmentRepository;
     private final AppUserRepository appUserRepository;
     private final TimeslotRepository timeslotRepository;
     private final AppointmentMapper appointmentMapper;
 
     // ------------------------------------------------------------
-    // CREATE (вход: AppointmentCreateRequest)
+    // CREATE
     // ------------------------------------------------------------
     @Override
+    @Transactional
     public AppointmentDto create(AppointmentCreateRequest request) {
 
-        Appointment entity = new Appointment();
-
-        entity.setAppointmentId(UUID.randomUUID());
-        entity.setStatus(AppointmentStatus.SCHEDULED);
-
-        entity.setStartAt(request.getStartAt());
-        entity.setDurationMin(request.getDurationMin());
-        entity.setDescription(request.getDescription());
-
         AppUser patient = findUser(request.getPatientId(), "Пациент");
-        entity.setPatient(patient);
 
-        AppUser doctor = findUser(request.getDoctorId(), "Доктор");
-        entity.setDoctor(doctor);
+        Timeslot slot = findSlot(request.getSlotId());
+        validateSlotForBooking(slot);
 
-        if (request.getSlotId() != null) {
-            Timeslot slot = findSlot(request.getSlotId());
-            validateSlotForBooking(slot);
-            entity.setSlot(slot);
-        } else {
-            entity.setSlot(null);
+        AppUser doctor = slot.getDoctor();
+
+        if (!request.getStartAt().equals(slot.getStartTime())) {
+            throw new IllegalArgumentException("startAt должен совпадать со временем начала слота.");
         }
 
+        if (!Integer.valueOf(SLOT_DURATION_MIN).equals(request.getDurationMin())) {
+            throw new IllegalArgumentException("durationMin должен быть равен 30 минутам.");
+        }
+
+        Appointment entity = new Appointment();
+        entity.setAppointmentId(UUID.randomUUID());
+        entity.setPatient(patient);
+        entity.setDoctor(doctor);
+        entity.setSlot(slot);
+
+        entity.setStartAt(slot.getStartTime());
+        entity.setDurationMin(SLOT_DURATION_MIN);
+        entity.setDescription(request.getDescription());
+
+        entity.setStatus(AppointmentStatus.SCHEDULED);
+        entity.setCancellationReason(null);
+        entity.setNotificationSent(false);
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(null);
         entity.setCanceledAt(null);
-        entity.setCancellationReason(null);
-        entity.setNotificationSent(false);
 
         Appointment saved = appointmentRepository.save(entity);
 
+        slot.setState(TimeslotState.BOOKED);
+        slot.setUpdatedAt(LocalDateTime.now());
+        timeslotRepository.save(slot);
+
         return appointmentMapper.toDto(saved);
     }
+
 
     // ------------------------------------------------------------
     // READ
@@ -79,80 +90,101 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public List<AppointmentDto> getAll() {
-        List<Appointment> entities = appointmentRepository.findAll();
-        return appointmentMapper.toDtoList(entities);
+        return appointmentMapper.toDtoList(appointmentRepository.findAll());
     }
 
     // ------------------------------------------------------------
-    // UPDATE (вход: AppointmentUpdateRequest)
+    // UPDATE
     // ------------------------------------------------------------
     @Override
+    @Transactional
     public AppointmentDto update(UUID id, AppointmentUpdateRequest request) {
 
         Appointment entity = appointmentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Приём не найден: " + id));
+                .orElseThrow(() -> new NotFoundException("Приём не найден: " + id));
 
-        if (request.getStartAt() != null) {
-            entity.setStartAt(request.getStartAt());
+        if (request.getSlotId() != null) {
+            Timeslot newSlot = findSlot(request.getSlotId());
+            validateSlotForBooking(newSlot);
+
+            UUID currentDoctorId = entity.getDoctor().getUserId();
+            if (!newSlot.getDoctor().getUserId().equals(currentDoctorId)) {
+                throw new IllegalArgumentException("Нельзя перенести приём на слот другого врача.");
+            }
+
+            Timeslot oldSlot = entity.getSlot();
+            if (oldSlot != null) {
+                oldSlot.setState(TimeslotState.AVAILABLE);
+                oldSlot.setUpdatedAt(LocalDateTime.now());
+                timeslotRepository.save(oldSlot);
+            }
+
+            newSlot.setState(TimeslotState.BOOKED);
+            newSlot.setUpdatedAt(LocalDateTime.now());
+            timeslotRepository.save(newSlot);
+
+            entity.setSlot(newSlot);
+            entity.setStartAt(newSlot.getStartTime());
+            entity.setDurationMin(SLOT_DURATION_MIN);
         }
-        if (request.getDurationMin() != null) {
-            entity.setDurationMin(request.getDurationMin());
-        }
+
         if (request.getDescription() != null) {
             entity.setDescription(request.getDescription());
         }
+
         if (request.getStatus() != null) {
-            entity.setStatus(request.getStatus());
-        }
-        if (request.getCancellationReason() != null) {
-            entity.setCancellationReason(request.getCancellationReason());
-        }
 
-        if (request.getPatientId() != null) {
-            entity.setPatient(findUser(request.getPatientId(), "Пациент"));
-        }
-        if (request.getDoctorId() != null) {
-            entity.setDoctor(findUser(request.getDoctorId(), "Доктор"));
-        }
+            AppointmentStatus newStatus = request.getStatus();
 
-        if (request.getSlotId() != null) {
-            Timeslot slot = findSlot(request.getSlotId());
-            validateSlotForBooking(slot);
-            entity.setSlot(slot);
+            if (newStatus == AppointmentStatus.CANCELED) {
+
+                if (request.getCancellationReason() == null || request.getCancellationReason().isBlank()) {
+                    throw new IllegalArgumentException("Для отмены нужна cancellationReason.");
+                }
+
+                if (entity.getStatus() == AppointmentStatus.CANCELED) {
+                    throw new IllegalArgumentException("Приём уже отменён.");
+                }
+
+                entity.setStatus(AppointmentStatus.CANCELED);
+                entity.setCancellationReason(request.getCancellationReason());
+                entity.setCanceledAt(LocalDateTime.now());
+
+                // освобождаем слот
+                Timeslot slot = entity.getSlot();
+                if (slot != null) {
+                    slot.setState(TimeslotState.AVAILABLE);
+                    slot.setUpdatedAt(LocalDateTime.now());
+                    timeslotRepository.save(slot);
+                }
+
+            } else {
+                entity.setStatus(newStatus);
+            }
         }
 
         entity.setUpdatedAt(LocalDateTime.now());
 
-        // если отменили — ставим время отмены
-        if (entity.getStatus() == AppointmentStatus.CANCELED && entity.getCanceledAt() == null) {
-            entity.setCanceledAt(LocalDateTime.now());
-        }
-
         Appointment saved = appointmentRepository.save(entity);
         return appointmentMapper.toDto(saved);
     }
-
     // ------------------------------------------------------------
     // DELETE
     // ------------------------------------------------------------
     @Override
     public void delete(UUID id) {
-
-        boolean exists = appointmentRepository.existsById(id);
-
-        if (!exists) {
+        if (!appointmentRepository.existsById(id)) {
             throw new NotFoundException("Приём не найден: " + id);
         }
-
         appointmentRepository.deleteById(id);
     }
 
     // ------------------------------------------------------------
     // HELPERS
     // ------------------------------------------------------------
-    private AppUser findUser(UUID userId, String roleName) {
+    private AppUser findUser(UUID userId, String title) {
         return appUserRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException(roleName + " не найден: " + userId));
+                .orElseThrow(() -> new NotFoundException(title + " не найден: " + userId));
     }
 
     private Timeslot findSlot(UUID slotId) {
@@ -161,15 +193,11 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private void validateSlotForBooking(Timeslot slot) {
-
         if (slot.isBlocked()) {
             throw new IllegalArgumentException("Слот заблокирован.");
         }
-
         if (slot.getState() != TimeslotState.AVAILABLE) {
-            throw new IllegalArgumentException(
-                    "Слот недоступен для записи. Текущее состояние: " + slot.getState()
-            );
+            throw new IllegalArgumentException("Слот недоступен. Текущее состояние: " + slot.getState());
         }
     }
 }

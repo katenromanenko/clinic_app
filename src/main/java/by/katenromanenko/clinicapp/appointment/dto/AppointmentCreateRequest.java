@@ -18,11 +18,8 @@ public class AppointmentCreateRequest {
     @NotNull(message = "patientId обязателен.")
     private UUID patientId;
 
-    @Schema(description = "Идентификатор врача (UUID).")
-    @NotNull(message = "doctorId обязателен.")
-    private UUID doctorId;
-
-    @Schema(description = "Идентификатор слота (UUID). Может быть null.")
+    @Schema(description = "Идентификатор слота (UUID).")
+    @NotNull(message = "slotId обязателен.")
     private UUID slotId;
 
     @Schema(description = "Дата и время начала приёма.")

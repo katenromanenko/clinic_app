@@ -25,7 +25,10 @@ public class GlobalExceptionHandler {
     // 400: DTO в теле запроса не прошло @Valid
     // ------------------------------------------------------------
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
 
         List<String> details = new ArrayList<>();
 
@@ -44,17 +47,21 @@ public class GlobalExceptionHandler {
         ErrorResponse body = new ErrorResponse(
                 "VALIDATION_ERROR",
                 "Запрос содержит некорректные данные",
-                details
+                details,
+                request.getRequestURI()
         );
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
     // ------------------------------------------------------------
-    // 400: валидация параметров
+    // 400: валидация параметров запроса (query/path)
     // ------------------------------------------------------------
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex,
+            HttpServletRequest request
+    ) {
 
         List<String> details = new ArrayList<>();
 
@@ -66,7 +73,8 @@ public class GlobalExceptionHandler {
         ErrorResponse body = new ErrorResponse(
                 "VALIDATION_ERROR",
                 "Параметры запроса некорректны",
-                details
+                details,
+                request.getRequestURI()
         );
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
@@ -76,7 +84,10 @@ public class GlobalExceptionHandler {
     // 404: ресурс НЕ НАЙДЕН
     // ------------------------------------------------------------
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFound(
+            NotFoundException ex,
+            HttpServletRequest request
+    ) {
 
         String message = (ex.getMessage() == null || ex.getMessage().isBlank())
                 ? "Ресурс не найден"
@@ -85,17 +96,21 @@ public class GlobalExceptionHandler {
         ErrorResponse body = new ErrorResponse(
                 "NOT_FOUND",
                 message,
-                Collections.emptyList()
+                Collections.emptyList(),
+                request.getRequestURI()
         );
 
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);
     }
 
     // ------------------------------------------------------------
-    // 400: бизнес-ошибка / плохой запрос
+    // 400: плохой запрос
     // ------------------------------------------------------------
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
 
         String message = (ex.getMessage() == null || ex.getMessage().isBlank())
                 ? "Некорректный запрос"
@@ -104,7 +119,8 @@ public class GlobalExceptionHandler {
         ErrorResponse body = new ErrorResponse(
                 "BAD_REQUEST",
                 message,
-                Collections.emptyList()
+                Collections.emptyList(),
+                request.getRequestURI()
         );
 
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
@@ -114,12 +130,16 @@ public class GlobalExceptionHandler {
     // 401: не авторизован
     // ------------------------------------------------------------
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+    public ResponseEntity<ErrorResponse> handleAuthentication(
+            AuthenticationException ex,
+            HttpServletRequest request
+    ) {
 
         ErrorResponse body = new ErrorResponse(
                 "UNAUTHORIZED",
                 "Требуется авторизация (некорректный или отсутствующий токен)",
-                Collections.emptyList()
+                Collections.emptyList(),
+                request.getRequestURI()
         );
 
         return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
@@ -129,12 +149,16 @@ public class GlobalExceptionHandler {
     // 403: авторизован, но прав не хватает
     // ------------------------------------------------------------
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request
+    ) {
 
         ErrorResponse body = new ErrorResponse(
                 "FORBIDDEN",
                 "Недостаточно прав для выполнения операции",
-                Collections.emptyList()
+                Collections.emptyList(),
+                request.getRequestURI()
         );
 
         return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
@@ -144,14 +168,18 @@ public class GlobalExceptionHandler {
     // 500: любая неожиданная ошибка
     // ------------------------------------------------------------
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleUnexpected(
+            Exception ex,
+            HttpServletRequest request
+    ) {
 
         log.error("Unexpected error for [{} {}]", request.getMethod(), request.getRequestURI(), ex);
 
         ErrorResponse body = new ErrorResponse(
                 "INTERNAL_ERROR",
                 "Внутренняя ошибка сервера. Попробуйте позже.",
-                Collections.emptyList()
+                Collections.emptyList(),
+                request.getRequestURI()
         );
 
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);

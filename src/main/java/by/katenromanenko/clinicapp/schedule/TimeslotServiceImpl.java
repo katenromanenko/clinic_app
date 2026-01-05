@@ -6,6 +6,8 @@ import by.katenromanenko.clinicapp.schedule.mapper.TimeslotMapper;
 import by.katenromanenko.clinicapp.user.AppUser;
 import by.katenromanenko.clinicapp.user.AppUserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -23,16 +25,53 @@ public class TimeslotServiceImpl implements TimeslotService {
     @Override
     public TimeslotDto create(TimeslotDto dto) {
 
+        String login = currentLogin();
+
+        AppUser currentUser = appUserRepository.findByLogin(login)
+                .orElseThrow(() -> new NotFoundException(
+                        "Пользователь не найден по login: " + login
+                ));
+
+        AppUser doctor;
+
+        switch (currentUser.getRole()) {
+
+            case DOCTOR -> {
+                doctor = currentUser;
+
+                if (dto.getDoctorId() != null
+                        && !dto.getDoctorId().equals(doctor.getUserId())) {
+                    throw new IllegalArgumentException(
+                            "Доктор не может создавать таймслоты для другого врача"
+                    );
+                }
+            }
+
+            case ADMIN -> {
+                if (dto.getDoctorId() == null) {
+                    throw new IllegalArgumentException(
+                            "Для ADMIN поле doctorId обязательно"
+                    );
+                }
+
+                doctor = appUserRepository.findById(dto.getDoctorId())
+                        .orElseThrow(() -> new NotFoundException(
+                                "Доктор не найден: " + dto.getDoctorId()
+                        ));
+            }
+
+            default -> throw new IllegalArgumentException(
+                    "Только DOCTOR или ADMIN могут создавать таймслоты"
+            );
+        }
+
         Timeslot entity = timeslotMapper.toEntity(dto);
-
-
         entity.setSlotId(UUID.randomUUID());
-
-
-        AppUser doctor = appUserRepository.findById(dto.getDoctorId())
-                .orElseThrow(() -> new NotFoundException("Доктор не найден: " + dto.getDoctorId()));
         entity.setDoctor(doctor);
 
+        if (entity.getState() == null) {
+            entity.setState(TimeslotState.AVAILABLE);
+        }
 
         entity.setCreatedAt(LocalDateTime.now());
         entity.setUpdatedAt(null);
@@ -40,6 +79,7 @@ public class TimeslotServiceImpl implements TimeslotService {
         Timeslot saved = timeslotRepository.save(entity);
         return timeslotMapper.toDto(saved);
     }
+
 
     @Override
     public TimeslotDto getById(UUID id) {
@@ -92,6 +132,14 @@ public class TimeslotServiceImpl implements TimeslotService {
         }
 
         timeslotRepository.deleteById(id);
+    }
+
+    private String currentLogin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            throw new IllegalStateException("Нет аутентификации в SecurityContext");
+        }
+        return auth.getName();
     }
 }
 
