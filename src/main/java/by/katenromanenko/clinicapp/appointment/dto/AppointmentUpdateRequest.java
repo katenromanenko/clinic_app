@@ -18,9 +18,6 @@ public class AppointmentUpdateRequest {
     @Schema(description = "Идентификатор пациента (UUID).")
     private UUID patientId;
 
-    @Schema(description = "Идентификатор врача (UUID).")
-    private UUID doctorId;
-
     @Schema(description = "Идентификатор слота (UUID).")
     private UUID slotId;
 
